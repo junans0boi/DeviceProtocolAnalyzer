@@ -6,7 +6,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         d:DesignWidth="1200"
-        d:DesignHeight="850"
+        d:DesignHeight="900"
         x:Class="DeviceProtocolAnalyzer.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Icon="/Assets/avalonia-logo.ico"
@@ -40,14 +40,14 @@
         <Style Selector="TextBlock.label">
             <Setter Property="FontSize" Value="12" />
             <Setter Property="Opacity" Value="0.7" />
-            <Setter Property="Margin" Value="2,0,0,4" />
+            <Setter Property="Margin" Value="2,0,0,2" />
         </Style>
         <Style Selector="ComboBox, TextBox">
             <Setter Property="HorizontalAlignment" Value="Stretch" />
             <Setter Property="CornerRadius" Value="8" />
             <Setter Property="Background" Value="White" />
             <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="MinHeight" Value="38" />
+            <Setter Property="MinHeight" Value="34" />
         </Style>
         <Style Selector="Border.panel ComboBox, Border.panel TextBox">
             <Setter Property="Background" Value="#F1F2F6" />
@@ -63,7 +63,7 @@
         <Style Selector="Button">
             <Setter Property="CornerRadius" Value="8" />
             <Setter Property="Padding" Value="16,8" />
-            <Setter Property="MinHeight" Value="38" />
+            <Setter Property="MinHeight" Value="34" />
             <Setter Property="HorizontalContentAlignment" Value="Center" />
         </Style>
         <Style Selector="Border.pill">
@@ -122,10 +122,10 @@
         <!-- 본문: 좌측 설정 / 우측 로그 -->
         <Grid Grid.Row="1" ColumnDefinitions="360,*" ColumnSpacing="16">
             <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
-                <StackPanel Spacing="16">
+                <StackPanel Spacing="8">
 
                     <Border Classes="card">
-                        <StackPanel Spacing="10">
+                        <StackPanel Spacing="7">
                             <TextBlock Classes="cardTitle" Text="세션 정보" Margin="0" />
                             <StackPanel>
                                 <TextBlock Classes="label" Text="제조사" />
@@ -141,7 +141,7 @@
                             </StackPanel>
                             <StackPanel>
                                 <TextBlock Classes="label" Text="메모" />
-                                <TextBox Text="{Binding Memo}" PlaceholderText="테스트 조건과 메모" AcceptsReturn="True" MinHeight="60" TextWrapping="Wrap" />
+                                <TextBox Text="{Binding Memo}" PlaceholderText="테스트 조건과 메모" AcceptsReturn="True" MinHeight="48" TextWrapping="Wrap" />
                             </StackPanel>
                             <StackPanel IsVisible="{Binding SessionDirectory, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                                 <TextBlock Classes="label" Text="세션 폴더" />
@@ -155,7 +155,7 @@
                     </Border>
 
                     <Border Classes="card">
-                        <StackPanel Spacing="10">
+                        <StackPanel Spacing="7">
                             <TextBlock Classes="cardTitle" Text="시리얼 연결" Margin="0" />
                             <TextBlock Text="{Binding PortNotice}" FontWeight="SemiBold" Foreground="#2E9E4F" TextWrapping="Wrap"
                                        IsVisible="{Binding PortNotice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
@@ -166,7 +166,7 @@
                                     <Button Grid.Column="1" Content="새로고침" Command="{Binding RefreshPortsCommand}" />
                                 </Grid>
                             </StackPanel>
-                            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="10">
+                            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="6">
                                 <StackPanel Grid.Row="0" Grid.Column="0">
                                     <TextBlock Classes="label" Text="통신 속도(Baud)" />
                                     <ComboBox ItemsSource="{Binding BaudRates}" SelectedItem="{Binding SelectedBaudRate}" />
