@@ -14,7 +14,8 @@
         Width="1200"
         Height="850"
         MinWidth="900"
-        MinHeight="650">
+        MinHeight="650"
+        Background="#F1F2F6">
 
     <Design.DataContext>
         <vm:MainViewModel />
@@ -22,10 +23,12 @@
 
     <Window.Styles>
         <Style Selector="Border.card">
-            <Setter Property="Background" Value="#14808080" />
-            <Setter Property="BorderBrush" Value="#26808080" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Padding" Value="4" />
+        </Style>
+        <Style Selector="Border.panel">
+            <Setter Property="Background" Value="White" />
+            <Setter Property="CornerRadius" Value="14" />
             <Setter Property="Padding" Value="16" />
         </Style>
         <Style Selector="TextBlock.cardTitle">
@@ -42,10 +45,25 @@
         <Style Selector="ComboBox, TextBox">
             <Setter Property="HorizontalAlignment" Value="Stretch" />
             <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Background" Value="White" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="MinHeight" Value="38" />
+        </Style>
+        <Style Selector="Border.panel ComboBox, Border.panel TextBox">
+            <Setter Property="Background" Value="#F1F2F6" />
+        </Style>
+        <Style Selector="Button.accent">
+            <Setter Property="Background" Value="#0A84FF" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+        <Style Selector="Button.accent:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#006EE6" />
+            <Setter Property="TextBlock.Foreground" Value="White" />
         </Style>
         <Style Selector="Button">
             <Setter Property="CornerRadius" Value="8" />
             <Setter Property="Padding" Value="16,8" />
+            <Setter Property="MinHeight" Value="38" />
             <Setter Property="HorizontalContentAlignment" Value="Center" />
         </Style>
         <Style Selector="Border.pill">
@@ -69,7 +87,7 @@
             <Setter Property="Padding" Value="12,8" />
             <Setter Property="Margin" Value="0,0,0,6" />
             <Setter Property="BorderThickness" Value="3,0,0,0" />
-            <Setter Property="Background" Value="#10808080" />
+            <Setter Property="Background" Value="#F4F5F8" />
             <Setter Property="BorderBrush" Value="#3B82F6" />
         </Style>
         <Style Selector="Border.logItem.tx">
@@ -178,7 +196,7 @@
 
             <!-- 우측: 로그 + 송신 -->
             <Grid Grid.Column="1" RowDefinitions="*,Auto" RowSpacing="16">
-                <Border Grid.Row="0" Classes="card">
+                <Border Grid.Row="0" Classes="card panel">
                     <Grid RowDefinitions="Auto,*" RowSpacing="10">
                         <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="14">
                             <TextBlock Classes="cardTitle" Text="수신 / 송신 로그" Margin="0" VerticalAlignment="Center" />
@@ -206,7 +224,7 @@
                     </Grid>
                 </Border>
 
-                <Border Grid.Row="1" Classes="card">
+                <Border Grid.Row="1" Classes="card panel">
                     <StackPanel Spacing="8">
                         <TextBlock Classes="cardTitle" Text="송신" Margin="0" />
                         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
@@ -220,7 +238,7 @@
         </Grid>
 
         <!-- 하단 상태/오류 -->
-        <Border Grid.Row="2" Classes="card" Padding="14,10"
+        <Border Grid.Row="2" Classes="card panel" Padding="14,10"
                 IsVisible="{Binding LastError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
             <TextBlock Text="{Binding LastError}" Foreground="#E5484D" TextWrapping="Wrap" FontWeight="SemiBold" />
         </Border>
