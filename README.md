@@ -8,7 +8,7 @@
 
 ## 다운로드
 
-[Releases](../../releases)에서 운영체제에 맞는 zip을 받아 압축을 풀고 실행합니다. .NET 설치는 필요 없습니다.
+[Releases](../../releases)의 최신 버전에서 운영체제에 맞는 zip을 받아 압축을 풀고 실행합니다. .NET 설치는 필요 없습니다.
 
 - Windows x64: `DeviceProtocolAnalyzer-win-x64.zip` → `DeviceProtocolAnalyzer.exe`
 - macOS Apple Silicon: `DeviceProtocolAnalyzer-osx-arm64.zip` → 서명되지 않은 앱이라 처음에는 우클릭 → 열기로 실행합니다. 막히면 `xattr -cr <폴더>`를 실행하세요.
@@ -33,15 +33,17 @@ dotnet run
 
 ## 사용 방법
 
+프로그램 왼쪽 아래 **사용 가이드** 버튼에서 같은 내용을 앱 안에서도 볼 수 있습니다.
+
 1. 분석할 장비를 PC에 연결합니다.
 2. Windows에서는 Device Manager에서 COM Port와 USB-Serial 드라이버를 확인합니다.
-3. 프로그램을 실행하고 `새로고침`로 포트 목록을 갱신합니다.
-4. Port, Baud Rate, Data Bits, Parity, Stop Bits를 선택합니다.
-5. Manufacturer, Model, Test Name, Memo에 테스트 조건을 기록합니다.
+3. 프로그램을 실행하고 `새로고침`으로 포트 목록을 갱신합니다.
+4. 포트, 통신 속도(Baud), 데이터 비트, 패리티, 정지 비트를 선택합니다. 데이터가 안 들어오면 `DTR/RTS 켜기`를 체크해 다시 연결해 보세요.
+5. 제조사, 모델, 테스트 이름, 메모에 테스트 조건을 기록합니다.
 6. `세션 시작`을 누릅니다.
-7. `연결`를 누르고 장비에서 데이터가 송신되는 동작을 수행합니다.
+7. `연결`을 누르고 장비에서 데이터가 송신되는 동작을 수행합니다.
 8. RX 로그에서 Timestamp, 수신 바이트 수, HEX, ASCII 표현을 확인합니다.
-9. 장비가 Host 명령을 요구하면 Transmit에서 `ASCII` 또는 `HEX`를 선택해 송신합니다.
+9. 장비가 Host 명령을 요구하면 송신 영역에서 `ASCII` 또는 `HEX`를 선택해 송신합니다.
 10. `세션 종료` 후 세션 폴더의 파일을 보관합니다.
 
 `화면 지우기`은 화면에 표시된 RX/TX 목록만 지우며 저장된 파일은 삭제하지 않습니다. `자동 스크롤`을 끄면 실시간 수신 중에도 이전 로그를 확인할 수 있습니다.
