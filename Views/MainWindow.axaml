@@ -12,151 +12,217 @@
         Icon="/Assets/avalonia-logo.ico"
         Title="Device Protocol Analyzer"
         Width="1200"
-        Height="800"
+        Height="850"
         MinWidth="900"
-        MinHeight="600"
-        FontSize="13">
+        MinHeight="650">
 
     <Design.DataContext>
         <vm:MainViewModel />
     </Design.DataContext>
 
     <Window.Styles>
-        <Style Selector="ComboBox, TextBox, Button">
-            <Setter Property="CornerRadius" Value="3" />
-            <Setter Property="MinHeight" Value="30" />
-            <Setter Property="Padding" Value="8,4" />
+        <Style Selector="Border.card">
+            <Setter Property="Background" Value="#14808080" />
+            <Setter Property="BorderBrush" Value="#26808080" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Padding" Value="16" />
         </Style>
-        <Style Selector="Button">
-            <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Style Selector="TextBlock.cardTitle">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Opacity" Value="0.6" />
+            <Setter Property="Margin" Value="0,0,0,10" />
         </Style>
         <Style Selector="TextBlock.label">
-            <Setter Property="Opacity" Value="0.65" />
             <Setter Property="FontSize" Value="12" />
-            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Opacity" Value="0.7" />
+            <Setter Property="Margin" Value="2,0,0,4" />
+        </Style>
+        <Style Selector="ComboBox, TextBox">
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="CornerRadius" Value="8" />
+        </Style>
+        <Style Selector="Button">
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="16,8" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Border.pill">
+            <Setter Property="CornerRadius" Value="999" />
+            <Setter Property="Padding" Value="12,5" />
+            <Setter Property="Background" Value="#22808080" />
+        </Style>
+        <Style Selector="Border.pill.on">
+            <Setter Property="Background" Value="#2E34C759" />
+        </Style>
+        <Style Selector="Ellipse.dot">
+            <Setter Property="Width" Value="8" />
+            <Setter Property="Height" Value="8" />
+            <Setter Property="Fill" Value="#8A8A8A" />
+        </Style>
+        <Style Selector="Border.on Ellipse.dot">
+            <Setter Property="Fill" Value="#34C759" />
+        </Style>
+        <Style Selector="Border.logItem">
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="12,8" />
+            <Setter Property="Margin" Value="0,0,0,6" />
+            <Setter Property="BorderThickness" Value="3,0,0,0" />
+            <Setter Property="Background" Value="#10808080" />
+            <Setter Property="BorderBrush" Value="#3B82F6" />
+        </Style>
+        <Style Selector="Border.logItem.tx">
+            <Setter Property="BorderBrush" Value="#F59E0B" />
         </Style>
         <Style Selector="TextBlock.mono">
             <Setter Property="FontFamily" Value="Menlo, Consolas, monospace" />
             <Setter Property="FontSize" Value="12.5" />
-        </Style>
-        <Style Selector="TextBlock.mono.rx">
-            <Setter Property="Foreground" Value="#2F81F7" />
-        </Style>
-        <Style Selector="TextBlock.mono.tx">
-            <Setter Property="Foreground" Value="#D29922" />
-        </Style>
-        <Style Selector="Border.bar">
-            <Setter Property="BorderBrush" Value="#33808080" />
-            <Setter Property="BorderThickness" Value="0,0,0,1" />
-            <Setter Property="Padding" Value="12,8" />
-        </Style>
-        <Style Selector="Border.statusbar">
-            <Setter Property="BorderBrush" Value="#33808080" />
-            <Setter Property="BorderThickness" Value="0,1,0,0" />
-            <Setter Property="Background" Value="#10808080" />
-            <Setter Property="Padding" Value="12,6" />
+            <Setter Property="TextWrapping" Value="Wrap" />
         </Style>
         <Style Selector="ListBoxItem">
             <Setter Property="Padding" Value="0" />
-            <Setter Property="MinHeight" Value="0" />
-            <Setter Property="CornerRadius" Value="0" />
         </Style>
     </Window.Styles>
 
-    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto,Auto">
+    <Grid RowDefinitions="Auto,*,Auto" Margin="24,20,24,20" RowSpacing="16">
 
-        <!-- 연결 툴바 -->
-        <Border Grid.Row="0" Classes="bar">
-            <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,*,Auto,Auto" ColumnSpacing="8">
-                <TextBlock Grid.Column="0" Classes="label" Text="포트" />
-                <ComboBox Grid.Column="1" ItemsSource="{Binding AvailablePorts}" SelectedItem="{Binding SelectedPort}" MinWidth="150" />
-                <Button Grid.Column="2" Content="⟳" Command="{Binding RefreshPortsCommand}" ToolTip.Tip="새로고침" MinWidth="30" Padding="0" />
-                <TextBlock Grid.Column="3" Classes="label" Text="Baud" Margin="10,0,0,0" />
-                <ComboBox Grid.Column="4" ItemsSource="{Binding BaudRates}" SelectedItem="{Binding SelectedBaudRate}" MinWidth="95" />
-                <ComboBox Grid.Column="5" ItemsSource="{Binding DataBitsOptions}" SelectedItem="{Binding SelectedDataBits}" ToolTip.Tip="데이터 비트" MinWidth="64" />
-                <ComboBox Grid.Column="6" ItemsSource="{Binding ParityOptions}" SelectedItem="{Binding SelectedParity}" ToolTip.Tip="패리티" MinWidth="86" />
-                <ComboBox Grid.Column="7" ItemsSource="{Binding StopBitsOptions}" SelectedItem="{Binding SelectedStopBits}" ToolTip.Tip="정지 비트" MinWidth="86" />
-                <CheckBox Grid.Column="8" Content="DTR/RTS" IsChecked="{Binding DtrRtsEnable}" Margin="6,0,0,0" />
-                <Button Grid.Column="9" Classes="accent" Content="연결" Command="{Binding ConnectCommand}" MinWidth="76" />
-                <TextBlock Grid.Column="10" Text="{Binding PortNotice}" Foreground="#2EA043" VerticalAlignment="Center" Margin="8,0,0,0" TextTrimming="CharacterEllipsis" />
-                <Button Grid.Column="11" Content="연결 해제" Command="{Binding DisconnectCommand}" />
-            </Grid>
-        </Border>
-
-        <!-- 세션 정보 -->
-        <Border Grid.Row="1" Classes="bar">
-            <Grid ColumnDefinitions="Auto,160,Auto,140,Auto,170,Auto,*,Auto,Auto" ColumnSpacing="8">
-                <TextBlock Grid.Column="0" Classes="label" Text="제조사" />
-                <TextBox Grid.Column="1" Text="{Binding Manufacturer}" PlaceholderText="Kisan" />
-                <TextBlock Grid.Column="2" Classes="label" Text="모델" Margin="6,0,0,0" />
-                <TextBox Grid.Column="3" Text="{Binding Model}" PlaceholderText="K6" />
-                <TextBlock Grid.Column="4" Classes="label" Text="테스트" Margin="6,0,0,0" />
-                <TextBox Grid.Column="5" Text="{Binding TestName}" PlaceholderText="50000x2_10000x3" />
-                <TextBlock Grid.Column="6" Classes="label" Text="메모" Margin="6,0,0,0" />
-                <TextBox Grid.Column="7" Text="{Binding Memo}" PlaceholderText="테스트 조건과 메모" />
-                <Button Grid.Column="8" Classes="accent" Content="세션 시작" Command="{Binding StartSessionCommand}" />
-                <Button Grid.Column="9" Content="세션 종료" Command="{Binding StopSessionCommand}" />
-            </Grid>
-        </Border>
-
-        <!-- 로그 도구줄 -->
-        <Border Grid.Row="2" Classes="bar" Padding="12,6">
-            <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
-                <TextBlock Grid.Column="0" Text="로그" FontWeight="SemiBold" VerticalAlignment="Center" />
-                <TextBlock Grid.Column="1" Classes="label" Text="{Binding SessionDirectory}" TextTrimming="CharacterEllipsis" />
-                <CheckBox Grid.Column="2" Content="자동 스크롤" IsChecked="{Binding AutoScroll}" />
-                <Button Grid.Column="3" Content="화면 지우기" Command="{Binding ClearCommand}" MinHeight="26" Padding="10,2" />
-            </Grid>
-        </Border>
-
-        <!-- 로그 표 -->
-        <Grid Grid.Row="3" RowDefinitions="Auto,*">
-            <Border Grid.Row="0" Classes="bar" Padding="12,4" Background="#10808080">
-                <Grid ColumnDefinitions="100,36,64,2*,*" ColumnSpacing="12">
-                    <TextBlock Grid.Column="0" Classes="label" Text="시간" />
-                    <TextBlock Grid.Column="1" Classes="label" Text="방향" />
-                    <TextBlock Grid.Column="2" Classes="label" Text="바이트" HorizontalAlignment="Right" />
-                    <TextBlock Grid.Column="3" Classes="label" Text="HEX" />
-                    <TextBlock Grid.Column="4" Classes="label" Text="ASCII" />
-                </Grid>
+        <!-- 헤더 -->
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+            <StackPanel Spacing="2">
+                <TextBlock Text="Device Protocol Analyzer" FontSize="24" FontWeight="Bold" />
+                <TextBlock Text="프로토콜 분석을 위한 시리얼 장비 바이트 수집" Opacity="0.6" />
+            </StackPanel>
+            <Border Grid.Column="1" Classes="pill" Classes.on="{Binding IsConnected}" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Ellipse Classes="dot" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding StatusText}" FontWeight="SemiBold" />
+                </StackPanel>
             </Border>
-            <ListBox Grid.Row="1" x:Name="LogList" ItemsSource="{Binding LogEntries}" Background="Transparent" BorderThickness="0">
-                <ListBox.ItemTemplate>
-                    <DataTemplate x:DataType="models:LogEntry">
-                        <Border Padding="12,3" BorderBrush="#18808080" BorderThickness="0,0,0,1">
-                            <Grid ColumnDefinitions="100,36,64,2*,*" ColumnSpacing="12">
-                                <TextBlock Grid.Column="0" Classes="mono" Text="{Binding Timestamp, StringFormat='{}{0:HH:mm:ss.fff}'}" Opacity="0.7" />
-                                <TextBlock Grid.Column="1" Classes="mono" Text="{Binding Direction}" FontWeight="Bold"
-                                           Classes.rx="{Binding Direction, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static models:LogDirection.Rx}}"
-                                           Classes.tx="{Binding Direction, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static models:LogDirection.Tx}}" />
-                                <TextBlock Grid.Column="2" Classes="mono" Text="{Binding Data.Length}" HorizontalAlignment="Right" />
-                                <TextBlock Grid.Column="3" Classes="mono" Text="{Binding Hex}" TextWrapping="Wrap" />
-                                <TextBlock Grid.Column="4" Classes="mono" Text="{Binding Ascii}" TextWrapping="Wrap" Opacity="0.75" />
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
         </Grid>
 
-        <!-- 송신 -->
-        <Border Grid.Row="4" Classes="statusbar">
-            <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="8">
-                <TextBlock Grid.Column="0" Classes="label" Text="송신" />
-                <ComboBox Grid.Column="1" ItemsSource="{Binding TxModes}" SelectedItem="{Binding TxMode}" MinWidth="90" />
-                <TextBox Grid.Column="2" Text="{Binding TxText}" PlaceholderText="ASCII 문자 또는 HEX 바이트 (02 01 03)" FontFamily="Menlo, Consolas, monospace" />
-                <Button Grid.Column="3" Content="보내기" Command="{Binding SendCommand}" MinWidth="80" />
-            </Grid>
-        </Border>
+        <!-- 본문: 좌측 설정 / 우측 로그 -->
+        <Grid Grid.Row="1" ColumnDefinitions="360,*" ColumnSpacing="16">
+            <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="16">
 
-        <!-- 상태바 -->
-        <Border Grid.Row="5" Classes="statusbar" Padding="12,5">
-            <Grid ColumnDefinitions="Auto,Auto,Auto,*" ColumnSpacing="20">
-                <TextBlock Grid.Column="0" Text="{Binding StatusText}" FontWeight="SemiBold" />
-                <TextBlock Grid.Column="1" Classes="label" Text="{Binding RxByteCount, StringFormat='RX {0:N0} B'}" />
-                <TextBlock Grid.Column="2" Classes="label" Text="{Binding TxByteCount, StringFormat='TX {0:N0} B'}" />
-                <TextBlock Grid.Column="3" Text="{Binding LastError}" Foreground="#F85149" TextTrimming="CharacterEllipsis" HorizontalAlignment="Right" />
+                    <Border Classes="card">
+                        <StackPanel Spacing="10">
+                            <TextBlock Classes="cardTitle" Text="세션 정보" Margin="0" />
+                            <StackPanel>
+                                <TextBlock Classes="label" Text="제조사" />
+                                <TextBox Text="{Binding Manufacturer}" PlaceholderText="제조사명" />
+                            </StackPanel>
+                            <StackPanel>
+                                <TextBlock Classes="label" Text="모델" />
+                                <TextBox Text="{Binding Model}" PlaceholderText="모델명" />
+                            </StackPanel>
+                            <StackPanel>
+                                <TextBlock Classes="label" Text="테스트 이름" />
+                                <TextBox Text="{Binding TestName}" PlaceholderText="50000x2_10000x3" />
+                            </StackPanel>
+                            <StackPanel>
+                                <TextBlock Classes="label" Text="메모" />
+                                <TextBox Text="{Binding Memo}" PlaceholderText="테스트 조건과 메모" AcceptsReturn="True" MinHeight="60" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <StackPanel IsVisible="{Binding SessionDirectory, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                <TextBlock Classes="label" Text="세션 폴더" />
+                                <TextBlock Text="{Binding SessionDirectory}" TextWrapping="Wrap" FontSize="12" Opacity="0.7" />
+                            </StackPanel>
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="8" Margin="0,4,0,0">
+                                <Button Grid.Column="0" Classes="accent" Content="세션 시작" Command="{Binding StartSessionCommand}" HorizontalAlignment="Stretch" />
+                                <Button Grid.Column="1" Content="세션 종료" Command="{Binding StopSessionCommand}" HorizontalAlignment="Stretch" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Classes="card">
+                        <StackPanel Spacing="10">
+                            <TextBlock Classes="cardTitle" Text="시리얼 연결" Margin="0" />
+                            <TextBlock Text="{Binding PortNotice}" FontWeight="SemiBold" Foreground="#2E9E4F" TextWrapping="Wrap"
+                                       IsVisible="{Binding PortNotice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                            <StackPanel>
+                                <TextBlock Classes="label" Text="포트" />
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                    <ComboBox Grid.Column="0" ItemsSource="{Binding AvailablePorts}" SelectedItem="{Binding SelectedPort}" />
+                                    <Button Grid.Column="1" Content="새로고침" Command="{Binding RefreshPortsCommand}" />
+                                </Grid>
+                            </StackPanel>
+                            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="10">
+                                <StackPanel Grid.Row="0" Grid.Column="0">
+                                    <TextBlock Classes="label" Text="통신 속도(Baud)" />
+                                    <ComboBox ItemsSource="{Binding BaudRates}" SelectedItem="{Binding SelectedBaudRate}" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="0" Grid.Column="1">
+                                    <TextBlock Classes="label" Text="데이터 비트" />
+                                    <ComboBox ItemsSource="{Binding DataBitsOptions}" SelectedItem="{Binding SelectedDataBits}" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="0">
+                                    <TextBlock Classes="label" Text="패리티" />
+                                    <ComboBox ItemsSource="{Binding ParityOptions}" SelectedItem="{Binding SelectedParity}" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="1">
+                                    <TextBlock Classes="label" Text="정지 비트" />
+                                    <ComboBox ItemsSource="{Binding StopBitsOptions}" SelectedItem="{Binding SelectedStopBits}" />
+                                </StackPanel>
+                            </Grid>
+                            <CheckBox Content="DTR/RTS 켜기" IsChecked="{Binding DtrRtsEnable}" />
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                <Button Grid.Column="0" Classes="accent" Content="연결" Command="{Binding ConnectCommand}" HorizontalAlignment="Stretch" />
+                                <Button Grid.Column="1" Content="연결 해제" Command="{Binding DisconnectCommand}" HorizontalAlignment="Stretch" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- 우측: 로그 + 송신 -->
+            <Grid Grid.Column="1" RowDefinitions="*,Auto" RowSpacing="16">
+                <Border Grid.Row="0" Classes="card">
+                    <Grid RowDefinitions="Auto,*" RowSpacing="10">
+                        <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="14">
+                            <TextBlock Classes="cardTitle" Text="수신 / 송신 로그" Margin="0" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" Text="{Binding RxByteCount, StringFormat='RX {0:N0} B'}" Foreground="#3B82F6" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="2" Text="{Binding TxByteCount, StringFormat='TX {0:N0} B'}" Foreground="#F59E0B" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="12">
+                                <CheckBox Content="자동 스크롤" IsChecked="{Binding AutoScroll}" />
+                                <Button Content="화면 지우기" Command="{Binding ClearCommand}" Padding="12,4" />
+                            </StackPanel>
+                        </Grid>
+                        <ListBox Grid.Row="1" x:Name="LogList" ItemsSource="{Binding LogEntries}" Background="Transparent" BorderThickness="0">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate x:DataType="models:LogEntry">
+                                    <Border Classes="logItem"
+                                            Classes.tx="{Binding Direction, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static models:LogDirection.Tx}}">
+                                        <StackPanel Spacing="3">
+                                            <TextBlock Classes="mono" Text="{Binding Header}" FontWeight="SemiBold" />
+                                            <TextBlock Classes="mono" Text="{Binding HexLine}" />
+                                            <TextBlock Classes="mono" Text="{Binding AsciiLine}" Opacity="0.7" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </Grid>
+                </Border>
+
+                <Border Grid.Row="1" Classes="card">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="cardTitle" Text="송신" Margin="0" />
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                            <ComboBox Grid.Column="0" ItemsSource="{Binding TxModes}" SelectedItem="{Binding TxMode}" MinWidth="100" />
+                            <TextBox Grid.Column="1" Text="{Binding TxText}" PlaceholderText="ASCII 문자 또는 HEX 바이트 (02 01 03)" />
+                            <Button Grid.Column="2" Classes="accent" Content="보내기" Command="{Binding SendCommand}" MinWidth="90" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
             </Grid>
+        </Grid>
+
+        <!-- 하단 상태/오류 -->
+        <Border Grid.Row="2" Classes="card" Padding="14,10"
+                IsVisible="{Binding LastError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <TextBlock Text="{Binding LastError}" Foreground="#E5484D" TextWrapping="Wrap" FontWeight="SemiBold" />
         </Border>
     </Grid>
 </Window>
