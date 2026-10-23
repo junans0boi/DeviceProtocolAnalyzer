@@ -13,6 +13,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 {
     private readonly SerialPortService _serialPortService;
     private readonly SessionService _sessionService;
+    private readonly UsbDeviceService _usbDeviceService;
     private bool _disposed;
 
     public MainViewModel()
@@ -20,12 +21,15 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     {
     }
 
-    internal MainViewModel(SerialPortService serialPortService, SessionService sessionService)
+    internal MainViewModel(SerialPortService serialPortService, SessionService sessionService, UsbDeviceService? usbDeviceService = null)
     {
         _serialPortService = serialPortService;
         _sessionService = sessionService;
+        _usbDeviceService = usbDeviceService ?? new UsbDeviceService();
         _serialPortService.DataReceived += OnDataReceived;
         _serialPortService.Error += OnTransportError;
+        _usbDeviceService.DataReceived += OnDataReceived;
+        _usbDeviceService.Error += OnTransportError;
         _sessionService.Error += OnSessionError;
 
         RefreshPorts();
@@ -43,11 +47,36 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
     public IReadOnlyList<string> TxModes { get; } = ["ASCII", "HEX"];
 
+    public IReadOnlyList<string> TransportModes { get; } = [SerialMode, UsbMode];
+
+    public ObservableCollection<UsbDeviceOption> AvailableUsbDevices { get; } = [];
+
+    public ObservableCollection<UsbEndpointOption> UsbEndpoints { get; } = [];
+
     public ObservableCollection<LogEntry> LogEntries { get; } = [];
+
+    private const string SerialMode = "시리얼";
+
+    private const string UsbMode = "USB";
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ConnectCommand))]
     private string? _selectedPort;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsSerialMode))]
+    [NotifyPropertyChangedFor(nameof(IsUsbMode))]
+    [NotifyCanExecuteChangedFor(nameof(ConnectCommand))]
+    [NotifyCanExecuteChangedFor(nameof(SendCommand))]
+    private string _selectedTransport = SerialMode;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ConnectCommand))]
+    private UsbDeviceOption? _selectedUsbDevice;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ConnectCommand))]
+    private UsbEndpointOption? _selectedUsbEndpoint;
 
     [ObservableProperty]
     private int _selectedBaudRate = 9600;
@@ -113,6 +142,10 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private string _portNotice = string.Empty;
 
+    public bool IsSerialMode => SelectedTransport == SerialMode;
+
+    public bool IsUsbMode => SelectedTransport == UsbMode;
+
     public string SessionDirectory => _sessionService.CurrentSession?.SessionDirectory ?? string.Empty;
 
     [RelayCommand]
@@ -144,8 +177,108 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         }
     }
 
+    [RelayCommand]
+    private void RefreshUsb()
+    {
+        try
+        {
+            ApplyUsbDevices(UsbDeviceService.GetDevices());
+        }
+        catch (Exception exception)
+        {
+            SetError("USB 장치 목록을 가져올 수 없습니다. libusb 라이브러리가 있는지 확인하세요.", exception);
+        }
+    }
+
+    public void ApplyUsbDevices(IReadOnlyList<UsbDeviceOption> devices)
+    {
+        if (devices.SequenceEqual(AvailableUsbDevices))
+        {
+            return;
+        }
+
+        var previous = SelectedUsbDevice;
+        var added = devices.Except(AvailableUsbDevices).ToList();
+        var removed = AvailableUsbDevices.Except(devices).ToList();
+
+        AvailableUsbDevices.Clear();
+        foreach (var device in devices)
+        {
+            AvailableUsbDevices.Add(device);
+        }
+
+        // 연결 중에는 선택을 바꾸지 않는다.
+        SelectedUsbDevice = IsConnected && previous is not null && AvailableUsbDevices.Contains(previous) ? previous
+            : added.Count > 0 && !IsConnected ? added[^1]
+            : previous is not null && AvailableUsbDevices.Contains(previous) ? previous
+            : AvailableUsbDevices.FirstOrDefault();
+
+        var notices = new List<string>();
+        if (added.Count > 0)
+        {
+            notices.Add($"새 USB 장치 감지: {string.Join(", ", added.Select(device => $"{device.VendorId:X4}:{device.ProductId:X4}"))}");
+        }
+
+        if (removed.Count > 0)
+        {
+            notices.Add($"USB 장치 제거: {string.Join(", ", removed.Select(device => $"{device.VendorId:X4}:{device.ProductId:X4}"))}");
+        }
+
+        PortNotice = string.Join(" / ", notices);
+    }
+
+    partial void OnSelectedTransportChanged(string value)
+    {
+        if (value == UsbMode)
+        {
+            RefreshUsb();
+        }
+    }
+
+    partial void OnSelectedUsbDeviceChanged(UsbDeviceOption? value)
+    {
+        UsbEndpoints.Clear();
+        SelectedUsbEndpoint = null;
+        if (value is null || IsConnected)
+        {
+            return;
+        }
+
+        try
+        {
+            foreach (var endpoint in UsbDeviceService.GetInEndpoints(value))
+            {
+                UsbEndpoints.Add(endpoint);
+            }
+
+            SelectedUsbEndpoint = UsbEndpoints.FirstOrDefault();
+            if (UsbEndpoints.Count == 0)
+            {
+                PortNotice = "이 장치에서 읽을 수 있는 IN 엔드포인트(Bulk/Interrupt)를 찾지 못했습니다.";
+            }
+        }
+        catch (Exception exception)
+        {
+            SetError("USB 엔드포인트를 읽을 수 없습니다.", exception);
+        }
+    }
+
     public void PollPorts()
     {
+        if (IsUsbMode)
+        {
+            try
+            {
+                ApplyUsbDevices(UsbDeviceService.GetDevices());
+            }
+            catch (Exception exception)
+            {
+                PortNotice = $"USB 장치 조회 실패: {exception.Message}";
+            }
+
+            return;
+        }
+
         try
         {
             ApplyPorts(SerialPortService.GetPorts());
@@ -194,6 +327,12 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     [RelayCommand(CanExecute = nameof(CanConnect))]
     private void Connect()
     {
+        if (IsUsbMode)
+        {
+            ConnectUsb();
+            return;
+        }
+
         if (SelectedPort is null)
         {
             SetError("연결하기 전에 시리얼 포트를 선택하세요.");
@@ -217,13 +356,39 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         }
     }
 
+    private void ConnectUsb()
+    {
+        if (SelectedUsbDevice is null || SelectedUsbEndpoint is null)
+        {
+            SetError("연결하기 전에 USB 장치와 엔드포인트를 선택하세요.");
+            return;
+        }
+
+        var name = CreateSerialSettings().PortName;
+        try
+        {
+            _usbDeviceService.Connect(SelectedUsbDevice, SelectedUsbEndpoint);
+            IsConnected = true;
+            LastError = string.Empty;
+            StatusText = $"연결됨 - {name}";
+            _sessionService.WriteLog($"[{DateTimeOffset.Now:HH:mm:ss.fff}] CONNECT {name}");
+        }
+        catch (Exception exception)
+        {
+            IsConnected = false;
+            SetError($"{name}에 연결할 수 없습니다. Windows에서는 장치에 WinUSB 드라이버가 연결되어 있어야 합니다.", exception);
+            _sessionService.WriteLog($"[{DateTimeOffset.Now:HH:mm:ss.fff}] CONNECT ERROR {exception.Message}");
+        }
+    }
+
     [RelayCommand(CanExecute = nameof(CanDisconnect))]
     private void Disconnect()
     {
         try
         {
-            var port = SelectedPort ?? _serialPortService.CurrentSettings?.PortName ?? string.Empty;
+            var port = IsUsbMode ? CreateSerialSettings().PortName : SelectedPort ?? _serialPortService.CurrentSettings?.PortName ?? string.Empty;
             _serialPortService.Disconnect();
+            _usbDeviceService.Disconnect();
             IsConnected = false;
             StatusText = IsSessionActive ? "세션 진행 중 - 연결 안 됨" : "연결 안 됨";
             _sessionService.WriteLog($"[{DateTimeOffset.Now:HH:mm:ss.fff}] DISCONNECT {port}");
@@ -332,22 +497,28 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         _disposed = true;
         _serialPortService.DataReceived -= OnDataReceived;
         _serialPortService.Error -= OnTransportError;
+        _usbDeviceService.DataReceived -= OnDataReceived;
+        _usbDeviceService.Error -= OnTransportError;
         _sessionService.Error -= OnSessionError;
 
         try
         {
             _serialPortService.Disconnect();
+            _usbDeviceService.Disconnect();
         }
         finally
         {
             _serialPortService.Dispose();
+            _usbDeviceService.Dispose();
             _sessionService.Dispose();
         }
 
         GC.SuppressFinalize(this);
     }
 
-    private bool CanConnect() => !IsConnected && !string.IsNullOrWhiteSpace(SelectedPort);
+    private bool CanConnect() => !IsConnected && (IsUsbMode
+        ? SelectedUsbDevice is not null && SelectedUsbEndpoint is not null
+        : !string.IsNullOrWhiteSpace(SelectedPort));
 
     private bool CanDisconnect() => IsConnected;
 
@@ -355,10 +526,20 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
     private bool CanStopSession() => IsSessionActive;
 
-    private bool CanSend() => IsConnected && !string.IsNullOrWhiteSpace(TxText);
+    private bool CanSend() => IsConnected && IsSerialMode && !string.IsNullOrWhiteSpace(TxText);
 
     private SerialSettings CreateSerialSettings()
     {
+        if (IsUsbMode)
+        {
+            var device = SelectedUsbDevice;
+            var endpoint = SelectedUsbEndpoint;
+            var name = device is null
+                ? "USB"
+                : $"USB {device.VendorId:X4}:{device.ProductId:X4}" + (endpoint is null ? string.Empty : $" EP 0x{endpoint.EndpointAddress:X2}");
+            return new SerialSettings(name, 0, 0, Parity.None, StopBits.One, Transport: "usb");
+        }
+
         return new SerialSettings(
             SelectedPort ?? string.Empty,
             SelectedBaudRate,
@@ -387,7 +568,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
     private void OnTransportError(Exception exception)
     {
-        Dispatcher.UIThread.Post(() => SetError("시리얼 포트 오류.", exception));
+        Dispatcher.UIThread.Post(() => SetError("장치 통신 오류.", exception));
     }
 
     private void OnSessionError(Exception exception)

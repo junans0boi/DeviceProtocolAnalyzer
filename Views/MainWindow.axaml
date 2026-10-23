@@ -177,9 +177,14 @@
 
                     <Border Classes="card">
                         <StackPanel Spacing="7">
-                            <TextBlock Classes="cardTitle" Text="시리얼 연결" Margin="0" />
+                            <TextBlock Classes="cardTitle" Text="장치 연결" Margin="0" />
                             <TextBlock Text="{Binding PortNotice}" FontWeight="SemiBold" Foreground="#2E9E4F" TextWrapping="Wrap"
                                        IsVisible="{Binding PortNotice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                            <StackPanel>
+                                <TextBlock Classes="label" Text="연결 방식" />
+                                <ComboBox ItemsSource="{Binding TransportModes}" SelectedItem="{Binding SelectedTransport}" />
+                            </StackPanel>
+                            <StackPanel Spacing="7" IsVisible="{Binding IsSerialMode}">
                             <StackPanel>
                                 <TextBlock Classes="label" Text="포트" />
                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
@@ -206,6 +211,33 @@
                                 </StackPanel>
                             </Grid>
                             <CheckBox Content="DTR/RTS 켜기" IsChecked="{Binding DtrRtsEnable}" />
+                            </StackPanel>
+                            <StackPanel Spacing="7" IsVisible="{Binding IsUsbMode}">
+                                <StackPanel>
+                                    <TextBlock Classes="label" Text="USB 장치 (VID:PID)" />
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                        <ComboBox Grid.Column="0" ItemsSource="{Binding AvailableUsbDevices}" SelectedItem="{Binding SelectedUsbDevice}">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate x:DataType="models:UsbDeviceOption">
+                                                    <TextBlock Text="{Binding Display}" />
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                        <Button Grid.Column="1" Content="새로고침" Command="{Binding RefreshUsbCommand}" />
+                                    </Grid>
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Classes="label" Text="수신 엔드포인트 (IN)" />
+                                    <ComboBox ItemsSource="{Binding UsbEndpoints}" SelectedItem="{Binding SelectedUsbEndpoint}">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate x:DataType="models:UsbEndpointOption">
+                                                <TextBlock Text="{Binding Display}" />
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                </StackPanel>
+                                <TextBlock Text="Windows에서는 장치에 WinUSB 드라이버가 연결되어 있어야 합니다. 수신만 지원하며 송신은 사용할 수 없습니다." TextWrapping="Wrap" FontSize="11" Opacity="0.6" />
+                            </StackPanel>
                             <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
                                 <Button Grid.Column="0" Classes="accent" Content="연결" Command="{Binding ConnectCommand}" HorizontalAlignment="Stretch" />
                                 <Button Grid.Column="1" Content="연결 해제" Command="{Binding DisconnectCommand}" HorizontalAlignment="Stretch" />
@@ -283,6 +315,29 @@
                                 <Grid ColumnDefinitions="118,*" Margin="0,3"><TextBlock Text="session.log" FontFamily="Menlo, Consolas, monospace" FontSize="12" Foreground="#0A60D0" VerticalAlignment="Top" /><TextBlock Grid.Column="1" Text="사람이 읽는 기록과 오류" TextWrapping="Wrap" /></Grid>
                                 <Grid ColumnDefinitions="118,*" Margin="0,3"><TextBlock Text="metadata.json" FontFamily="Menlo, Consolas, monospace" FontSize="12" Foreground="#0A60D0" VerticalAlignment="Top" /><TextBlock Grid.Column="1" Text="제조사, 모델, 통신 설정, 시작 시각" TextWrapping="Wrap" /></Grid>
                                 <TextBlock Text="[지우기]는 화면만 지우며 저장된 파일은 그대로입니다." Opacity="0.6" TextWrapping="Wrap" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Classes="gpanel">
+                                    <StackPanel Spacing="2">
+                                        <TextBlock Text="USB 장치 (드라이버 없는 장비)" FontWeight="Bold" FontSize="14" Margin="0,0,0,6" />
+                                <TextBlock Text="장치 관리자에 '기타 장치'로만 보이고 COM 포트가 없는 장비용입니다. 수신만 지원합니다." Opacity="0.6" TextWrapping="Wrap" Margin="0,0,0,4" />
+                                <Grid ColumnDefinitions="30,*" Margin="0,3">
+                                    <Border Classes="badge"><TextBlock Text="1" Foreground="White" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                                    <TextBlock Grid.Column="1" Text="[연결 방식]을 USB로 바꿉니다. 장치 목록에 VID:PID가 표시됩니다." TextWrapping="Wrap" VerticalAlignment="Center" />
+                                </Grid>
+                                <Grid ColumnDefinitions="30,*" Margin="0,3">
+                                    <Border Classes="badge"><TextBlock Text="2" Foreground="White" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                                    <TextBlock Grid.Column="1" Text="Windows에서는 장치에 WinUSB 드라이버를 한 번 연결해야 합니다(Zadig 등 사용). 연결 후 [새로고침]을 누르세요." TextWrapping="Wrap" VerticalAlignment="Center" />
+                                </Grid>
+                                <Grid ColumnDefinitions="30,*" Margin="0,3">
+                                    <Border Classes="badge"><TextBlock Text="3" Foreground="White" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                                    <TextBlock Grid.Column="1" Text="장치를 고르고 수신 엔드포인트(IN)를 선택합니다. 모르면 목록의 첫 번째부터 시도하세요." TextWrapping="Wrap" VerticalAlignment="Center" />
+                                </Grid>
+                                <Grid ColumnDefinitions="30,*" Margin="0,3">
+                                    <Border Classes="badge"><TextBlock Text="4" Foreground="White" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                                    <TextBlock Grid.Column="1" Text="[세션 시작] → [연결] 후 장비를 동작시키면 수신 바이트가 기록됩니다." TextWrapping="Wrap" VerticalAlignment="Center" />
+                                </Grid>
+                                <Grid ColumnDefinitions="16,*" Margin="0,3"><TextBlock Text="•" Opacity="0.5" /><TextBlock Grid.Column="1" Text="연결이 안 되면 장치에 WinUSB 드라이버가 붙었는지 확인하세요." TextWrapping="Wrap" /></Grid>
                                     </StackPanel>
                                 </Border>
                                 <Border Classes="gpanel">
