@@ -14,6 +14,9 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     private readonly SerialPortService _serialPortService;
     private readonly SessionService _sessionService;
     private readonly UsbDeviceService _usbDeviceService;
+    private CancellationTokenSource? _handshakeCancellation;
+    private (string Command, TaskCompletionSource Signal)? _awaitedResponse;
+    private volatile bool _eagleEyeActive;
     private bool _disposed;
 
     public MainViewModel()
@@ -83,6 +86,9 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SendCommand))]
     private UsbEndpointOption? _selectedUsbOutEndpoint;
+
+    [ObservableProperty]
+    private bool _useEagleEye7;
 
     [ObservableProperty]
     private int _selectedBaudRate = 9600;
@@ -382,6 +388,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
             StatusText = $"연결됨 - {name}";
             _sessionService.WriteLog($"[{DateTimeOffset.Now:HH:mm:ss.fff}] CONNECT {name}");
             _sessionService.WriteLog($"USB endpoints: {string.Join(" | ", UsbEndpoints.Concat(UsbOutEndpoints).Select(endpoint => endpoint.Display))}");
+            StartEagleEye7IfEnabled();
         }
         catch (Exception exception)
         {
@@ -397,6 +404,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         try
         {
             var port = IsUsbMode ? CreateSerialSettings().PortName : SelectedPort ?? _serialPortService.CurrentSettings?.PortName ?? string.Empty;
+            StopEagleEye7();
             _serialPortService.Disconnect();
             _usbDeviceService.Disconnect();
             IsConnected = false;
@@ -521,6 +529,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
         try
         {
+            StopEagleEye7();
             _serialPortService.Disconnect();
             _usbDeviceService.Disconnect();
         }
@@ -571,6 +580,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     {
         var data = eventArgs.Data.ToArray();
         _sessionService.RecordReceived(data, eventArgs.Timestamp);
+        var note = _eagleEyeActive ? HandleEagleEye7(data, eventArgs.Timestamp) : null;
 
         Dispatcher.UIThread.Post(() =>
         {
@@ -579,9 +589,128 @@ public partial class MainViewModel : ViewModelBase, IDisposable
                 return;
             }
 
-            LogEntries.Add(LogEntry.Create(LogDirection.Rx, eventArgs.Timestamp, data));
+            LogEntries.Add(LogEntry.Create(LogDirection.Rx, eventArgs.Timestamp, data, note));
             RxByteCount += data.Length;
         });
+    }
+
+    private void StartEagleEye7IfEnabled()
+    {
+        if (!UseEagleEye7 || !IsUsbMode || SelectedUsbOutEndpoint is null)
+        {
+            if (UseEagleEye7 && SelectedUsbOutEndpoint is null)
+            {
+                SetError("EagleEye7 모드에는 송신 엔드포인트(OUT)가 필요합니다.");
+            }
+
+            return;
+        }
+
+        _eagleEyeActive = true;
+        _handshakeCancellation = new CancellationTokenSource();
+        _ = RunEagleEye7HandshakeAsync(_handshakeCancellation.Token);
+    }
+
+    private void StopEagleEye7()
+    {
+        _eagleEyeActive = false;
+        _handshakeCancellation?.Cancel();
+        _handshakeCancellation = null;
+        _awaitedResponse = null;
+    }
+
+    // Vendor program order: enable transfer (UDT), then choose what the device pushes (CFG); retry 3 times, 5s each.
+    private async Task RunEagleEye7HandshakeAsync(CancellationToken token)
+    {
+        var steps = new (string Command, byte[] Frame)[]
+        {
+            ("UDT", EagleEye7Protocol.UseDataTransfer()),
+            ("CFG", EagleEye7Protocol.ConfigureDataTransfer()),
+        };
+
+        try
+        {
+            foreach (var (command, frame) in steps)
+            {
+                var answered = false;
+                for (var attempt = 0; attempt < 3 && !answered; attempt++)
+                {
+                    var signal = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                    _awaitedResponse = (command, signal);
+                    SendEagleEye7Frame(frame);
+                    answered = await Task.WhenAny(signal.Task, Task.Delay(5000, token)) == signal.Task;
+                }
+
+                if (!answered)
+                {
+                    Dispatcher.UIThread.Post(() => SetError($"장치가 {command} 요청에 응답하지 않습니다."));
+                    return;
+                }
+
+                await Task.Delay(300, token);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception exception)
+        {
+            Dispatcher.UIThread.Post(() => SetError("EagleEye7 초기화 오류.", exception));
+        }
+    }
+
+    private string? HandleEagleEye7(byte[] data, DateTimeOffset timestamp)
+    {
+        var notes = new List<string>();
+        foreach (var frame in EagleEye7Protocol.Split(data))
+        {
+            var note = EagleEye7Protocol.Describe(frame);
+            notes.Add(note);
+            _sessionService.WriteLog($"[{timestamp:HH:mm:ss.fff}] 해석 : {note}");
+
+            if (_awaitedResponse is { } awaited && EagleEye7Protocol.IsResponseTo(frame, awaited.Command))
+            {
+                awaited.Signal.TrySetResult();
+            }
+
+            var acknowledgement = EagleEye7Protocol.BuildAcknowledgement(frame);
+            if (acknowledgement is not null)
+            {
+                SendEagleEye7Frame(acknowledgement);
+            }
+        }
+
+        return notes.Count == 0 ? null : string.Join(" / ", notes);
+    }
+
+    private void SendEagleEye7Frame(byte[] frame)
+    {
+        try
+        {
+            _usbDeviceService.Send(frame);
+            var timestamp = DateTimeOffset.Now;
+            var note = EagleEye7Protocol.Describe(frame);
+            _sessionService.RecordTransmitted(frame, timestamp);
+            _sessionService.WriteLog($"[{timestamp:HH:mm:ss.fff}] 해석 : {note}");
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                LogEntries.Add(LogEntry.Create(LogDirection.Tx, timestamp, frame, note));
+                TxByteCount += frame.Length;
+            });
+        }
+        catch (Exception exception)
+        {
+            _sessionService.WriteLog($"[{DateTimeOffset.Now:HH:mm:ss.fff}] TX ERROR {exception.Message}");
+            if (_eagleEyeActive)
+            {
+                Dispatcher.UIThread.Post(() => SetError("EagleEye7 응답을 보낼 수 없습니다.", exception));
+            }
+        }
     }
 
     private void OnTransportError(Exception exception)

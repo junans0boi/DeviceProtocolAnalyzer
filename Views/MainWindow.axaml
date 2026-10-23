@@ -246,7 +246,8 @@
                                     </ComboBox.ItemTemplate>
                                 </ComboBox>
                             </StackPanel>
-                                <TextBlock Text="Windows에서는 장치에 WinUSB 드라이버가 연결되어 있어야 합니다. 송신하려면 OUT 엔드포인트를 선택하세요." TextWrapping="Wrap" FontSize="11" Opacity="0.6" />
+                                <CheckBox Content="EagleEye7 자동 응답·해석" IsChecked="{Binding UseEagleEye7}" />
+                            <TextBlock Text="Windows에서는 장치에 WinUSB 드라이버가 연결되어 있어야 합니다. 송신하려면 OUT 엔드포인트를 선택하세요." TextWrapping="Wrap" FontSize="11" Opacity="0.6" />
                             </StackPanel>
                             <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
                                 <Button Grid.Column="0" Classes="accent" Content="연결" Command="{Binding ConnectCommand}" HorizontalAlignment="Stretch" />
@@ -348,6 +349,7 @@
                                     <TextBlock Grid.Column="1" Text="[세션 시작] → [연결] 후 장비를 동작시키면 수신 바이트가 기록됩니다." TextWrapping="Wrap" VerticalAlignment="Center" />
                                 </Grid>
                                 <Grid ColumnDefinitions="16,*" Margin="0,3"><TextBlock Text="•" Opacity="0.5" /><TextBlock Grid.Column="1" Text="연결이 안 되면 장치에 WinUSB 드라이버가 붙었는지 확인하세요." TextWrapping="Wrap" /></Grid>
+                                <Grid ColumnDefinitions="16,*" Margin="0,3"><TextBlock Text="•" Opacity="0.5" /><TextBlock Grid.Column="1" Text="이글아이7 장비는 [EagleEye7 자동 응답·해석]을 체크하고 연결하세요. 시작 명령과 확인 응답이 자동으로 처리되고, 기록에 상품권 종류·금액이 표시됩니다(번호는 뒷 4자리 마스킹)." TextWrapping="Wrap" /></Grid>
                                     </StackPanel>
                                 </Border>
                                 <Border Classes="gpanel">
@@ -389,6 +391,8 @@
                                             <TextBlock Classes="mono" Text="{Binding Header}" FontWeight="SemiBold" />
                                             <TextBlock Classes="mono" Text="{Binding HexLine}" />
                                             <TextBlock Classes="mono" Text="{Binding AsciiLine}" Opacity="0.7" />
+                                            <TextBlock Classes="mono" Text="{Binding NoteLine}" FontWeight="SemiBold" Foreground="#2E7D32"
+                                                       IsVisible="{Binding Note, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                                         </StackPanel>
                                     </Border>
                                 </DataTemplate>
