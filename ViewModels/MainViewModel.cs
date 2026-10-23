@@ -53,6 +53,8 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
     public ObservableCollection<UsbEndpointOption> UsbEndpoints { get; } = [];
 
+    public ObservableCollection<UsbEndpointOption> UsbOutEndpoints { get; } = [];
+
     public ObservableCollection<LogEntry> LogEntries { get; } = [];
 
     private const string SerialMode = "시리얼";
@@ -77,6 +79,10 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ConnectCommand))]
     private UsbEndpointOption? _selectedUsbEndpoint;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(SendCommand))]
+    private UsbEndpointOption? _selectedUsbOutEndpoint;
 
     [ObservableProperty]
     private int _selectedBaudRate = 9600;
@@ -238,7 +244,9 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     partial void OnSelectedUsbDeviceChanged(UsbDeviceOption? value)
     {
         UsbEndpoints.Clear();
+        UsbOutEndpoints.Clear();
         SelectedUsbEndpoint = null;
+        SelectedUsbOutEndpoint = null;
         if (value is null || IsConnected)
         {
             return;
@@ -246,12 +254,13 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
         try
         {
-            foreach (var endpoint in UsbDeviceService.GetInEndpoints(value))
+            foreach (var endpoint in UsbDeviceService.GetEndpoints(value))
             {
-                UsbEndpoints.Add(endpoint);
+                (endpoint.IsIn ? UsbEndpoints : UsbOutEndpoints).Add(endpoint);
             }
 
             SelectedUsbEndpoint = UsbEndpoints.FirstOrDefault();
+            SelectedUsbOutEndpoint = UsbOutEndpoints.FirstOrDefault();
             if (UsbEndpoints.Count == 0)
             {
                 PortNotice = "이 장치에서 읽을 수 있는 IN 엔드포인트(Bulk/Interrupt)를 찾지 못했습니다.";
@@ -367,11 +376,12 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         var name = CreateSerialSettings().PortName;
         try
         {
-            _usbDeviceService.Connect(SelectedUsbDevice, SelectedUsbEndpoint);
+            _usbDeviceService.Connect(SelectedUsbDevice, SelectedUsbEndpoint, SelectedUsbOutEndpoint);
             IsConnected = true;
             LastError = string.Empty;
             StatusText = $"연결됨 - {name}";
             _sessionService.WriteLog($"[{DateTimeOffset.Now:HH:mm:ss.fff}] CONNECT {name}");
+            _sessionService.WriteLog($"USB endpoints: {string.Join(" | ", UsbEndpoints.Concat(UsbOutEndpoints).Select(endpoint => endpoint.Display))}");
         }
         catch (Exception exception)
         {
@@ -467,7 +477,15 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
         try
         {
-            _serialPortService.Send(data);
+            if (IsUsbMode)
+            {
+                _usbDeviceService.Send(data);
+            }
+            else
+            {
+                _serialPortService.Send(data);
+            }
+
             var timestamp = DateTimeOffset.Now;
             _sessionService.RecordTransmitted(data, timestamp);
             LogEntries.Add(LogEntry.Create(LogDirection.Tx, timestamp, data));
@@ -526,7 +544,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
     private bool CanStopSession() => IsSessionActive;
 
-    private bool CanSend() => IsConnected && IsSerialMode && !string.IsNullOrWhiteSpace(TxText);
+    private bool CanSend() => IsConnected && (IsSerialMode || SelectedUsbOutEndpoint is not null) && !string.IsNullOrWhiteSpace(TxText);
 
     private SerialSettings CreateSerialSettings()
     {

@@ -50,7 +50,7 @@ dotnet run
 
 ## USB 장치(COM 포트가 없는 장비)
 
-장치 관리자에 "기타 장치"로만 보이고 COM 포트가 생기지 않는 Vendor USB 장비는 `연결 방식`을 **USB**로 바꿔 수신할 수 있습니다. 수신만 지원합니다.
+장치 관리자에 "기타 장치"로만 보이고 COM 포트가 생기지 않는 Vendor USB 장비는 `연결 방식`을 **USB**로 바꿔 수신할 수 있습니다. 수신과 Bulk/Interrupt OUT 송신을 지원합니다.
 
 1. `연결 방식`을 `USB`로 선택하면 장치 목록에 `VID:PID`가 표시됩니다.
 2. Windows에서는 장치에 WinUSB 드라이버를 한 번 연결해야 합니다([Zadig](https://zadig.akeo.ie/) 등 사용). 연결 후 `새로고침`을 누릅니다.
@@ -133,7 +133,7 @@ dotnet test tests/DeviceProtocolAnalyzer.Tests/DeviceProtocolAnalyzer.Tests.cspr
 ## 알려진 제한사항
 
 - Serial Port / USB CDC / Virtual COM / RS-232 분석과, 드라이버 없는 Vendor USB의 수신(Bulk/Interrupt IN)을 지원합니다.
-- USB 송신, USB HID, Ethernet TCP, 파일 출력 장치는 아직 지원하지 않습니다.
+- USB 제어 전송, USB HID, Ethernet TCP, 파일 출력 장치는 아직 지원하지 않습니다.
 - STX/ETX, checksum, 필드 구조와 값을 자동 해석하지 않습니다.
 - 실제 장비가 데이터를 자동 송신하는지, Host 명령에 응답하는지는 현장에서 확인해야 합니다.
 - 포트가 표시되더라도 Windows 드라이버, 케이블, 전기적 RS-232 변환기, 장비의 출력 모드에 따라 연결이 실패할 수 있습니다.
