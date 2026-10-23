@@ -15,6 +15,7 @@ public sealed class UsbDeviceService : IDisposable
     private readonly object _sync = new();
     private UsbContext? _context;
     private IUsbDevice? _device;
+    private UsbEndpointWriter? _writer;
     private int _claimedInterface = -1;
     private CancellationTokenSource? _readCancellation;
     private Task? _readTask;
@@ -47,7 +48,7 @@ public sealed class UsbDeviceService : IDisposable
             .ToArray();
     }
 
-    public static IReadOnlyList<UsbEndpointOption> GetInEndpoints(UsbDeviceOption option)
+    public static IReadOnlyList<UsbEndpointOption> GetEndpoints(UsbDeviceOption option)
     {
         ArgumentNullException.ThrowIfNull(option);
 
@@ -63,7 +64,6 @@ public sealed class UsbDeviceService : IDisposable
             {
                 foreach (UsbEndpointInfo endpoint in usbInterface.Endpoints)
                 {
-                    var isIn = (endpoint.EndpointAddress & 0x80) != 0;
                     var type = (endpoint.Attributes & 0x03) switch
                     {
                         2 => "Bulk",
@@ -71,9 +71,9 @@ public sealed class UsbDeviceService : IDisposable
                         _ => null,
                     };
 
-                    if (isIn && type is not null)
+                    if (type is not null)
                     {
-                        endpoints.Add(new UsbEndpointOption(usbInterface.Number, endpoint.EndpointAddress, type, endpoint.MaxPacketSize));
+                        endpoints.Add(new UsbEndpointOption(usbInterface.Number, (byte)usbInterface.Class, endpoint.EndpointAddress, type, endpoint.MaxPacketSize));
                     }
                 }
             }
@@ -82,7 +82,7 @@ public sealed class UsbDeviceService : IDisposable
         return endpoints;
     }
 
-    public void Connect(UsbDeviceOption deviceOption, UsbEndpointOption endpointOption)
+    public void Connect(UsbDeviceOption deviceOption, UsbEndpointOption endpointOption, UsbEndpointOption? outEndpoint = null)
     {
         ArgumentNullException.ThrowIfNull(deviceOption);
         ArgumentNullException.ThrowIfNull(endpointOption);
@@ -105,10 +105,22 @@ public sealed class UsbDeviceService : IDisposable
                 claimed = endpointOption.InterfaceNumber;
 
                 var reader = device.OpenEndpointReader((ReadEndpointID)endpointOption.EndpointAddress);
+                UsbEndpointWriter? writer = null;
+                if (outEndpoint is not null)
+                {
+                    if (outEndpoint.InterfaceNumber != claimed)
+                    {
+                        device.ClaimInterface(outEndpoint.InterfaceNumber);
+                    }
+
+                    writer = device.OpenEndpointWriter((WriteEndpointID)outEndpoint.EndpointAddress);
+                }
+
                 var cancellation = new CancellationTokenSource();
 
                 _context = context;
                 _device = device;
+                _writer = writer;
                 _claimedInterface = claimed;
                 _readCancellation = cancellation;
                 _readTask = Task.Run(() => ReadLoop(reader, Math.Max(endpointOption.MaxPacketSize, 64), cancellation.Token));
@@ -133,6 +145,22 @@ public sealed class UsbDeviceService : IDisposable
         lock (_sync)
         {
             DisconnectCore();
+        }
+    }
+
+    public void Send(byte[] data)
+    {
+        ArgumentNullException.ThrowIfNull(data);
+
+        lock (_sync)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            var writer = _writer ?? throw new InvalidOperationException("송신 엔드포인트(OUT)가 선택되지 않았습니다.");
+            var result = writer.Write(data, 1000, out _);
+            if (result != LibUsbDotNet.Error.Success)
+            {
+                throw new IOException($"USB 쓰기 실패: {result}");
+            }
         }
     }
 
@@ -209,6 +237,7 @@ public sealed class UsbDeviceService : IDisposable
         var context = _context;
         var claimed = _claimedInterface;
 
+        _writer = null;
         _readCancellation = null;
         _readTask = null;
         _device = null;
