@@ -129,7 +129,20 @@ public static class EagleEye7Protocol
         7 => "현대 아이파크",
         8 => "코리아트래블",
         9 => "컬쳐랜드",
+        10 => "GS",
+        11 => "S오일",
+        12 => "SK",
         _ => $"종류 코드 {code}",
+    };
+
+    /// <summary>Names the device uses in the UCI summary (confirmed with real vouchers).</summary>
+    public static string CurrencyDisplay(string name) => name switch
+    {
+        "HYU" => "현대(HYU)",
+        "GST" => "GS(GST)",
+        "SKT" => "SK(SKT)",
+        "SOT" => "S오일(SOT)",
+        _ => name,
     };
 
     private static string DescribeTicket(byte[] body)
@@ -166,7 +179,7 @@ public static class EagleEye7Protocol
                 }
             }
 
-            parts.Add($"{name} 총 {total}장" + (details.Count > 0 ? $" ({string.Join(", ", details)})" : string.Empty));
+            parts.Add($"{CurrencyDisplay(name)} 총 {total}장" + (details.Count > 0 ? $" ({string.Join(", ", details)})" : string.Empty));
         }
 
         var reject = body[position];

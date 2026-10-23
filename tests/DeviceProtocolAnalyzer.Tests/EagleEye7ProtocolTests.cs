@@ -62,9 +62,30 @@ public sealed class EagleEye7ProtocolTests
     [Fact]
     public void CountInformationAndStatusAreDecoded()
     {
-        Assert.Equal("집계 HYU 총 1장 (10,000원×1) | 거부 0 | 이중 0", EagleEye7Protocol.Describe(Hex(DeviceUci)));
+        Assert.Equal("집계 현대(HYU) 총 1장 (10,000원×1) | 거부 0 | 이중 0", EagleEye7Protocol.Describe(Hex(DeviceUci)));
         Assert.Equal("계수 종료", EagleEye7Protocol.Describe(Hex(DeviceUcs)));
         Assert.Equal("전송 인덱스 1건 [0]", EagleEye7Protocol.Describe(Hex(DeviceUii)));
+    }
+
+    [Theory]
+    [InlineData(6, "현대")]
+    [InlineData(10, "GS")]
+    [InlineData(11, "S오일")]
+    [InlineData(12, "SK")]
+    [InlineData(99, "종류 코드 99")]
+    public void TicketTypeNamesMatchObservedVouchers(int code, string expected)
+    {
+        Assert.Equal(expected, EagleEye7Protocol.TicketTypeName(code));
+    }
+
+    [Theory]
+    [InlineData("GST", "GS(GST)")]
+    [InlineData("SKT", "SK(SKT)")]
+    [InlineData("SOT", "S오일(SOT)")]
+    [InlineData("ABC", "ABC")]
+    public void SummaryNamesAreTranslated(string name, string expected)
+    {
+        Assert.Equal(expected, EagleEye7Protocol.CurrencyDisplay(name));
     }
 
     [Fact]
