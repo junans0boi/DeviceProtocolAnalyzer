@@ -19,6 +19,8 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     private volatile bool _eagleEyeActive;
     private volatile bool _etmActive;
     private readonly EtmProtocol _etm = new();
+    private volatile bool _kisanActive;
+    private readonly KisanProtocol _kisan = new();
     private bool _disposed;
 
     public MainViewModel()
@@ -94,6 +96,9 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty]
     private bool _useEtm;
+
+    [ObservableProperty]
+    private bool _useKisan;
 
     [ObservableProperty]
     private int _selectedBaudRate = 9600;
@@ -372,6 +377,11 @@ public partial class MainViewModel : ViewModelBase, IDisposable
                 _etm.Reset();
                 _etmActive = true;
             }
+            else if (UseKisan)
+            {
+                _kisan.Reset();
+                _kisanActive = true;
+            }
         }
         catch (Exception exception)
         {
@@ -592,6 +602,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         _sessionService.RecordReceived(data, eventArgs.Timestamp);
         var note = _eagleEyeActive ? HandleEagleEye7(data, eventArgs.Timestamp)
             : _etmActive ? HandleEtm(data, eventArgs.Timestamp)
+            : _kisanActive ? HandleKisan(data, eventArgs.Timestamp)
             : null;
 
         Dispatcher.UIThread.Post(() =>
@@ -604,6 +615,36 @@ public partial class MainViewModel : ViewModelBase, IDisposable
             LogEntries.Add(LogEntry.Create(LogDirection.Rx, eventArgs.Timestamp, data, note));
             RxByteCount += data.Length;
         });
+    }
+
+    // ETM and Kisan decoding read the same serial stream differently; keep only one on.
+    partial void OnUseEtmChanged(bool value)
+    {
+        if (value)
+        {
+            UseKisan = false;
+        }
+    }
+
+    partial void OnUseKisanChanged(bool value)
+    {
+        if (value)
+        {
+            UseEtm = false;
+        }
+    }
+
+    private string? HandleKisan(byte[] data, DateTimeOffset timestamp)
+    {
+        var notes = new List<string>();
+        foreach (var frame in _kisan.Feed(data))
+        {
+            var note = KisanProtocol.Describe(frame);
+            notes.Add(note);
+            _sessionService.WriteLog($"[{timestamp:HH:mm:ss.fff}] 해석 : {note}");
+        }
+
+        return notes.Count == 0 ? null : string.Join(" / ", notes);
     }
 
     private string? HandleEtm(byte[] data, DateTimeOffset timestamp)
@@ -638,6 +679,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
     private void StopEagleEye7()
     {
+        _kisanActive = false;
         _etmActive = false;
         _eagleEyeActive = false;
         _handshakeCancellation?.Cancel();

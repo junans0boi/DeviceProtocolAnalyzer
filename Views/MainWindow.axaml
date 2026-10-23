@@ -212,6 +212,7 @@
                             </Grid>
                             <CheckBox Content="DTR/RTS 켜기" IsChecked="{Binding DtrRtsEnable}" />
                             <CheckBox Content="ETM 주화 해석 (115200 / 8 / None / One)" IsChecked="{Binding UseEtm}" />
+                            <CheckBox Content="기산전자 지폐 해석 (115200 / 8 / None / One)" IsChecked="{Binding UseKisan}" />
                             </StackPanel>
                             <StackPanel Spacing="7" IsVisible="{Binding IsUsbMode}">
                                 <StackPanel>
@@ -309,6 +310,7 @@
                                 <Grid ColumnDefinitions="16,*" Margin="0,3"><TextBlock Text="•" Opacity="0.5" /><TextBlock Grid.Column="1" Text="데이터가 안 들어오면 [DTR/RTS 켜기]를 체크하고 다시 연결해 보세요. USB 가상 포트 장비는 이 옵션이 필요한 경우가 많습니다." TextWrapping="Wrap" /></Grid>
                                 <Grid ColumnDefinitions="16,*" Margin="0,3"><TextBlock Text="•" Opacity="0.5" /><TextBlock Grid.Column="1" Text="글자가 깨져 보이면 통신 속도나 패리티가 맞지 않은 것입니다." TextWrapping="Wrap" /></Grid>
                                 <Grid ColumnDefinitions="16,*" Margin="0,3"><TextBlock Text="•" Opacity="0.5" /><TextBlock Grid.Column="1" Text="ETM 주화 분류기는 115200 / 8 / None / One 으로 연결하고 [ETM 주화 해석]을 체크하세요. 동전이 지날 때마다 합계(원)와 동전 종류가 기록에 표시됩니다." TextWrapping="Wrap" /></Grid>
+                                <Grid ColumnDefinitions="16,*" Margin="0,3"><TextBlock Text="•" Opacity="0.5" /><TextBlock Grid.Column="1" Text="기산전자 지폐 계수기도 115200 / 8 / None / One 입니다. [기산전자 지폐 해석]을 체크하면 지폐 한 장마다 권종, 거부, 권종별 집계와 합계가 기록에 표시됩니다(ETM 해석과 함께 켤 수 없습니다)." TextWrapping="Wrap" /></Grid>
                                     </StackPanel>
                                 </Border>
                                 <Border Classes="gpanel">
