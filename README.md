@@ -48,6 +48,18 @@ dotnet run
 
 `화면 지우기`은 화면에 표시된 RX/TX 목록만 지우며 저장된 파일은 삭제하지 않습니다. `자동 스크롤`을 끄면 실시간 수신 중에도 이전 로그를 확인할 수 있습니다.
 
+## USB 장치(COM 포트가 없는 장비)
+
+장치 관리자에 "기타 장치"로만 보이고 COM 포트가 생기지 않는 Vendor USB 장비는 `연결 방식`을 **USB**로 바꿔 수신할 수 있습니다. 수신만 지원합니다.
+
+1. `연결 방식`을 `USB`로 선택하면 장치 목록에 `VID:PID`가 표시됩니다.
+2. Windows에서는 장치에 WinUSB 드라이버를 한 번 연결해야 합니다([Zadig](https://zadig.akeo.ie/) 등 사용). 연결 후 `새로고침`을 누릅니다.
+3. 장치와 수신 엔드포인트(IN)를 선택합니다. 모르면 목록의 첫 번째부터 시도하세요.
+4. `세션 시작` → `연결` 후 장비를 동작시키면 수신 바이트가 기록됩니다. 세션 파일의 `metadata.json`에는 `transport: "usb"`로 기록됩니다.
+
+- Windows 배포 zip에는 `libusb-1.0.dll`이 함께 들어 있어야 합니다(같은 폴더에 두세요).
+- macOS에서는 `brew install libusb`가 필요합니다.
+
 ## 세션 파일
 
 세션은 실행 파일 옆의 `logs/` 아래에 다음과 같이 저장됩니다.
@@ -120,8 +132,8 @@ dotnet test tests/DeviceProtocolAnalyzer.Tests/DeviceProtocolAnalyzer.Tests.cspr
 
 ## 알려진 제한사항
 
-- 1차 버전은 Serial Port / USB CDC / Virtual COM / RS-232 분석에 집중합니다.
-- USB HID, Vendor Specific USB, Ethernet TCP, 파일 출력 장치는 아직 지원하지 않습니다.
+- Serial Port / USB CDC / Virtual COM / RS-232 분석과, 드라이버 없는 Vendor USB의 수신(Bulk/Interrupt IN)을 지원합니다.
+- USB 송신, USB HID, Ethernet TCP, 파일 출력 장치는 아직 지원하지 않습니다.
 - STX/ETX, checksum, 필드 구조와 값을 자동 해석하지 않습니다.
 - 실제 장비가 데이터를 자동 송신하는지, Host 명령에 응답하는지는 현장에서 확인해야 합니다.
 - 포트가 표시되더라도 Windows 드라이버, 케이블, 전기적 RS-232 변환기, 장비의 출력 모드에 따라 연결이 실패할 수 있습니다.
@@ -139,3 +151,8 @@ dotnet test tests/DeviceProtocolAnalyzer.Tests/DeviceProtocolAnalyzer.Tests.cspr
 - 주요 값이 포함되는 위치
 - 동일 조건을 반복했을 때 변하는 Byte 위치
 - 통신 방향에 필요한 TX 명령과 응답 timeout
+
+## 서드파티 라이선스
+
+- [LibUsbDotNet](https://github.com/LibUsbDotNet/LibUsbDotNet) 3.0.224 — LGPL-3.0-or-later
+- [libusb](https://libusb.info/) 1.0.30 (`native/win-x64/libusb-1.0.dll`) — LGPL-2.1-or-later. 공식 릴리즈 바이너리를 그대로 사용하며, 같은 폴더의 DLL을 교체할 수 있습니다.
