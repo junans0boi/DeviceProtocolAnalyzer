@@ -8,4 +8,5 @@ public sealed record SerialSettings(
     int DataBits,
     Parity Parity,
     StopBits StopBits,
-    bool DtrRtsEnable = false);
+    bool DtrRtsEnable = false,
+    string Transport = "serial");

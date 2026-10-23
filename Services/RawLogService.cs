@@ -179,6 +179,7 @@ public sealed class RawLogService : IDisposable
             model = session.Model,
             testName = session.TestName,
             memo = session.Memo,
+            transport = session.SerialSettings.Transport,
             port = session.SerialSettings.PortName,
             baudRate = session.SerialSettings.BaudRate,
             dataBits = session.SerialSettings.DataBits,
