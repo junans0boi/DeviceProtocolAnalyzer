@@ -11,6 +11,8 @@
     <Compile Remove="tests\**\*.cs" />
     <Folder Include="Models\" />
     <AvaloniaResource Include="Assets\**" />
+    <!-- libusb is loaded next to the exe on Windows (single-file publish leaves it as a separate file) -->
+    <None Include="native\win-x64\libusb-1.0.dll" Condition="'$(RuntimeIdentifier)' == 'win-x64'" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" Link="libusb-1.0.dll" />
   </ItemGroup>
 
   <ItemGroup>
@@ -23,6 +25,7 @@
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="LibUsbDotNet" Version="3.0.224" />
     <PackageReference Include="System.IO.Ports" Version="10.0.0" />
   </ItemGroup>
 </Project>
