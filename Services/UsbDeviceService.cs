@@ -21,6 +21,9 @@ public sealed class UsbDeviceService : IDisposable
     private Task? _readTask;
     private bool _disposed;
 
+    /// <summary>Set to false (e.g. in tests) to keep libusb from being loaded at all.</summary>
+    public static bool IsEnabled { get; set; } = true;
+
     public event EventHandler<BytesReceivedEventArgs>? DataReceived;
 
     public event Action<Exception>? Error;
@@ -38,6 +41,7 @@ public sealed class UsbDeviceService : IDisposable
 
     public static IReadOnlyList<UsbDeviceOption> GetDevices()
     {
+        ThrowIfDisabled();
         using var context = new UsbContext();
         using var devices = context.List();
         return devices
@@ -52,6 +56,7 @@ public sealed class UsbDeviceService : IDisposable
     {
         ArgumentNullException.ThrowIfNull(option);
 
+        ThrowIfDisabled();
         using var context = new UsbContext();
         using var devices = context.List();
         var device = devices.FirstOrDefault(candidate => Matches(candidate, option))
@@ -92,6 +97,7 @@ public sealed class UsbDeviceService : IDisposable
             ObjectDisposedException.ThrowIf(_disposed, this);
             DisconnectCore();
 
+            ThrowIfDisabled();
             var context = new UsbContext();
             IUsbDevice? device = null;
             var claimed = -1;
@@ -178,6 +184,14 @@ public sealed class UsbDeviceService : IDisposable
         }
 
         GC.SuppressFinalize(this);
+    }
+
+    private static void ThrowIfDisabled()
+    {
+        if (!IsEnabled)
+        {
+            throw new DllNotFoundException("USB 기능이 꺼져 있습니다.");
+        }
     }
 
     private static bool Matches(IUsbDevice candidate, UsbDeviceOption option)
